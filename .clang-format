@@ -1,0 +1,21 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 140
+
+NamespaceIndentation: All
+InsertBraces: true
+BreakBeforeBraces: Attach
+
+AllowShortEnumsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+
+AllowShortCaseLabelsOnASingleLine: false
+
+BinPackArguments: false
+BinPackParameters: false
+
+# Avoid the "aligned hanging indent" look on wraps
+AlignAfterOpenBracket: DontAlign
+
+PointerAlignment: Left

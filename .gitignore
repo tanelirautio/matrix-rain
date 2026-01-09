@@ -1,0 +1,76 @@
+# -------------------------------------------------
+# Build artifacts
+# -------------------------------------------------
+build/
+build-*/
+out/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# -------------------------------------------------
+# MSVC / Windows
+# -------------------------------------------------
+*.exe
+*.dll
+*.lib
+*.exp
+*.pdb
+*.ilk
+*.obj
+*.idb
+*.iobj
+*.ipdb
+*.tlog
+*.pch
+
+.vs/
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+
+# -------------------------------------------------
+# vcpkg
+# -------------------------------------------------
+vcpkg_installed/
+.vcpkg-root
+.vcpkg-status
+
+# -------------------------------------------------
+# Logs & temp
+# -------------------------------------------------
+*.log
+*.tmp
+*.cache
+**/.cache/
+compile_commands.json
+CMakeUserPresets.json
+*.pgm
+
+# -------------------------------------------------
+# Editor / IDE
+# -------------------------------------------------
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/cmake-kits.json
+
+.idea/
+*.swp
+*.swo
+
+# -------------------------------------------------
+# OS junk
+# -------------------------------------------------
+Thumbs.db
+.DS_Store
+
+# -------------------------------------------------
+# Test artifacts
+# -------------------------------------------------
+Testing/
+CTestTestfile.cmake

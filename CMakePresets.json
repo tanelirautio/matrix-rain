@@ -1,0 +1,51 @@
+{
+  "version": 4,
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build"
+    },
+    {
+      "name": "vcpkg",
+      "displayName": "vcpkg toolchain",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      }
+    },
+    {
+      "name": "system",
+      "displayName": "System packages",
+      "inherits": "base"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "build",
+      "configurePreset": "base"
+    },
+    {
+      "name": "build-debug",
+      "configurePreset": "base",
+      "configuration": "Debug"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "test",
+      "configurePreset": "base",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "test-debug",
+      "configurePreset": "base",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

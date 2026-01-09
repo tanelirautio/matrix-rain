@@ -1,0 +1,20 @@
+{
+  // IntelliSense only
+  "C_Cpp.default.compilerPath": "cl.exe",
+  "C_Cpp.default.defines": [
+    "MATRIX_RAIN_ASSETS_DIR=\"${workspaceFolder}/assets\""
+  ],
+  // Format on save
+  "editor.formatOnSave": true,
+  // Use clang-format extension for C/C++
+  "[cpp]": {
+    "editor.defaultFormatter": "xaver.clang-format"
+  },
+  "[c]": {
+    "editor.defaultFormatter": "xaver.clang-format"
+  },
+  // clang-format configuration
+  "clang-format.style": "file",
+  "clang-format.fallbackStyle": "none",
+  "clang-format.executable": "C:/Program Files/LLVM/bin/clang-format.exe"
+}
