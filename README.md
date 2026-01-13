@@ -6,7 +6,7 @@ renderer.
 
 ## Features
 
-- Atlas-based glyph rendering (SDL3_ttf)
+- Atlas-based glyph rendering (SDL3_ttf on desktop)
 - Brighter head, fading trail
 - HiDPI-aware grid sizing based on pixel size
 - Deterministic simulation via fixed RNG seed
@@ -71,7 +71,7 @@ Run locally (serve the build output):
 cd build-emscripten
 python -m http.server
 ```
-Open `http://localhost:8000/MatrixRain.html`.
+Open `http://localhost:8000/index.html`.
 
 ## Deploy (static hosting)
 
@@ -88,6 +88,7 @@ For Render.com:
 This project uses `find_package(SDL3 CONFIG REQUIRED)` and
 `find_package(SDL3_ttf CONFIG REQUIRED)`. That means CMake must be able to
 locate SDL3 and SDL3_ttf config files.
+For the web build, Emscripten uses SDL2 + SDL2_ttf ports instead of these packages.
 
 If CMake fails to configure with "could not find SDL3", you need to point it at
 your package manager's install prefix:
