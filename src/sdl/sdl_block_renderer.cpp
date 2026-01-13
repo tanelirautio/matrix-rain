@@ -31,7 +31,7 @@ void SdlBlockRenderer::render(const matrix_rain::MatrixRain& rain) {
             rect.w = static_cast<float>(m_config.cellWidthPx);
             rect.h = static_cast<float>(m_config.cellHeightPx);
 
-            SDL_RenderFillRect(m_renderer, &rect);
+            matrix_rain_render_fill_rect(m_renderer, &rect);
         }
     }
 }

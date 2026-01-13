@@ -81,7 +81,7 @@ void SdlTtfGlyphRenderer::render(const matrix_rain::MatrixRain& rain) {
 
             SDL_SetTextureAlphaMod(m_atlasTex, 255);
 
-            SDL_RenderTexture(m_renderer, m_atlasTex, &src, &dst);
+            matrix_rain_render_texture(m_renderer, m_atlasTex, &src, &dst);
         }
     }
 }
@@ -162,21 +162,45 @@ bool SdlTtfGlyphRenderer::buildAtlas1024() {
         rgba[static_cast<size_t>(i) * 4 + 3] = a;
     }
 
-    m_atlasTex = SDL_CreateTexture(m_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, W, H);
+#if MATRIX_RAIN_SDL2
+    SDL_Surface* atlasSurface = SDL_CreateRGBSurfaceWithFormatFrom(
+        rgba.data(), W, H, 32, W * 4, matrix_rain_rgba_pixel_format());
+    if (!atlasSurface) {
+        std::cerr << "SDL_CreateRGBSurfaceWithFormatFrom failed: " << SDL_GetError() << "\n";
+        m_atlas.reset();
+        return false;
+    }
+    m_atlasTex = SDL_CreateTextureFromSurface(m_renderer, atlasSurface);
+    matrix_rain_destroy_surface(atlasSurface);
+    if (!m_atlasTex) {
+        std::cerr << "SDL_CreateTextureFromSurface failed: " << SDL_GetError() << "\n";
+        m_atlas.reset();
+        return false;
+    }
+#else
+    m_atlasTex = matrix_rain_create_texture(m_renderer, matrix_rain_rgba_pixel_format(), SDL_TEXTUREACCESS_STATIC, W, H);
     if (!m_atlasTex) {
         std::cerr << "SDL_CreateTexture failed: " << SDL_GetError() << "\n";
         m_atlas.reset();
         return false;
     }
 
-    if (!SDL_UpdateTexture(m_atlasTex, nullptr, rgba.data(), W * 4)) {
+    if (!matrix_rain_update_texture(m_atlasTex, nullptr, rgba.data(), W * 4)) {
         std::cerr << "SDL_UpdateTexture failed: " << SDL_GetError() << "\n";
         SDL_DestroyTexture(m_atlasTex);
         m_atlasTex = nullptr;
         m_atlas.reset();
         return false;
     }
+#endif
 
-    SDL_SetTextureBlendMode(m_atlasTex, SDL_BLENDMODE_BLEND);
+    if (SDL_SetTextureBlendMode(m_atlasTex, SDL_BLENDMODE_BLEND) != 0) {
+#ifdef __EMSCRIPTEN__
+        std::fprintf(stderr, "MatrixRain web: SDL_SetTextureBlendMode failed: %s\n", SDL_GetError());
+        std::fflush(stderr);
+#else
+        std::cerr << "SDL_SetTextureBlendMode failed: " << SDL_GetError() << "\n";
+#endif
+    }
     return true;
 }

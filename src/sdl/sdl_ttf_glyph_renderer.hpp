@@ -2,9 +2,7 @@
 
 #include "glyph_atlas.hpp"
 #include "renderer.hpp"
-
-#include <SDL3/SDL.h>
-#include <SDL3_ttf/SDL_ttf.h>
+#include "sdl_compat.hpp"
 
 #include <cstdint>
 #include <string>

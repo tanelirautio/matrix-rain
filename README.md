@@ -53,6 +53,36 @@ cmake --build --preset build-debug
 ctest --preset test-debug
 ```
 
+## Web (Emscripten)
+
+Prereqs:
+- Install emsdk and run `emsdk_env` so `emcc` is on PATH.
+- Ensure `EMSDK` is set (used by the CMake preset).
+Note: the web build uses Emscripten's SDL2 + SDL2_ttf ports.
+
+Configure + build:
+```
+cmake --preset emscripten
+cmake --build --preset build-emscripten
+```
+
+Run locally (serve the build output):
+```
+cd build-emscripten
+python -m http.server
+```
+Open `http://localhost:8000/MatrixRain.html`.
+
+## Deploy (static hosting)
+
+The Emscripten build now outputs `index.html` plus `index.js`, `index.wasm`, and `index.data`.
+You can upload the contents of `build-emscripten/` to any static host and it will serve the
+Matrix Rain page at the site root.
+
+For Render.com:
+- Create a Static Site.
+- Use the `build-emscripten/` folder as the publish directory (build locally, then deploy).
+
 ## Dependencies and discovery
 
 This project uses `find_package(SDL3 CONFIG REQUIRED)` and

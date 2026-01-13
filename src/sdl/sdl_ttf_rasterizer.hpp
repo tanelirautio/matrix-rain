@@ -3,8 +3,7 @@
 #include <cstdint>
 #include <optional>
 
-#include <SDL3/SDL.h>
-#include <SDL3_ttf/SDL_ttf.h>
+#include "sdl_compat.hpp"
 
 #include "glyph_atlas.hpp" // matrix_rain::GlyphBitmap / PixelFormat
 

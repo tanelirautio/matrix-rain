@@ -1,6 +1,6 @@
 #pragma once
 #include "renderer.hpp"
-#include <SDL3/SDL.h>
+#include "sdl_compat.hpp"
 
 class SdlBlockRenderer final : public IRenderer {
   public:

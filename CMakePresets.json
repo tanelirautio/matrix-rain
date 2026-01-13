@@ -18,6 +18,15 @@
       "name": "system",
       "displayName": "System packages",
       "inherits": "base"
+    },
+    {
+      "name": "emscripten",
+      "displayName": "Emscripten (web)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-emscripten",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+      }
     }
   ],
   "buildPresets": [
@@ -29,6 +38,10 @@
       "name": "build-debug",
       "configurePreset": "base",
       "configuration": "Debug"
+    },
+    {
+      "name": "build-emscripten",
+      "configurePreset": "emscripten"
     }
   ],
   "testPresets": [

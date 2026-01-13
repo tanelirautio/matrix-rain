@@ -18,14 +18,22 @@ std::optional<matrix_rain::GlyphBitmap> SdlTtfRasterizer::rasterize(char32_t cp)
 
     // Render white; we only keep alpha.
     SDL_Color white{255, 255, 255, 255};
+#if MATRIX_RAIN_SDL2
+#if defined(SDL_TTF_VERSION_ATLEAST) && SDL_TTF_VERSION_ATLEAST(2, 0, 18)
+    SDL_Surface* surf = TTF_RenderGlyph32_Blended(m_font, static_cast<Uint32>(cp), white);
+#else
+    SDL_Surface* surf = TTF_RenderGlyph_Blended(m_font, static_cast<Uint16>(cp), white);
+#endif
+#else
     SDL_Surface* surf = TTF_RenderGlyph_Blended(m_font, static_cast<Uint32>(cp), white);
+#endif
     if (!surf) {
         return std::nullopt;
     }
 
     // Convert to a known format with alpha so we can read pixels consistently.
-    SDL_Surface* rgba = SDL_ConvertSurface(surf, SDL_PIXELFORMAT_RGBA32);
-    SDL_DestroySurface(surf);
+    SDL_Surface* rgba = matrix_rain_convert_surface(surf, matrix_rain_rgba_pixel_format());
+    matrix_rain_destroy_surface(surf);
     surf = nullptr;
 
     if (!rgba) {
@@ -45,13 +53,25 @@ std::optional<matrix_rain::GlyphBitmap> SdlTtfRasterizer::rasterize(char32_t cp)
     //
     // SDL_ttf gives: minx/maxx/miny/maxy/advance where miny/maxy are relative to baseline.
     int minx = 0, maxx = 0, miny = 0, maxy = 0, advance = 0;
-    if (!TTF_GetGlyphMetrics(m_font, static_cast<Uint32>(cp), &minx, &maxx, &miny, &maxy, &advance)) {
-        SDL_DestroySurface(rgba);
+#if MATRIX_RAIN_SDL2
+    if (TTF_GlyphMetrics(m_font, static_cast<Uint16>(cp), &minx, &maxx, &miny, &maxy, &advance) != 0) {
+        matrix_rain_destroy_surface(rgba);
         return std::nullopt;
     }
+#else
+    if (!TTF_GetGlyphMetrics(m_font, static_cast<Uint32>(cp), &minx, &maxx, &miny, &maxy, &advance)) {
+        matrix_rain_destroy_surface(rgba);
+        return std::nullopt;
+    }
+#endif
 
+#if MATRIX_RAIN_SDL2
+    const int ascent = TTF_FontAscent(m_font);
+    const int descent = TTF_FontDescent(m_font); // typically <= 0 in some libs; SDL_ttf returns positive? depends.
+#else
     const int ascent = TTF_GetFontAscent(m_font);
     const int descent = TTF_GetFontDescent(m_font); // typically <= 0 in some libs; SDL_ttf returns positive? depends.
+#endif
     // To be safe, treat descent as absolute pixels below baseline:
     const int descentAbs = std::abs(descent);
 
@@ -78,16 +98,21 @@ std::optional<matrix_rain::GlyphBitmap> SdlTtfRasterizer::rasterize(char32_t cp)
     // Read glyph coverage from the rendered surface (alpha when present, otherwise RGB intensity).
     bool locked = false;
     if (SDL_MUSTLOCK(rgba)) {
-        if (!SDL_LockSurface(rgba)) {
-            SDL_DestroySurface(rgba);
+        if (!matrix_rain_lock_surface(rgba)) {
+            matrix_rain_destroy_surface(rgba);
             return std::nullopt;
         }
         locked = true;
     }
 
+#if MATRIX_RAIN_SDL2
+    const SDL_PixelFormat* fmt = rgba->format;
+    const int bpp = fmt ? fmt->BytesPerPixel : 0;
+#else
     const SDL_PixelFormatDetails* fmt = SDL_GetPixelFormatDetails(rgba->format);
     const SDL_Palette* palette = SDL_GetSurfacePalette(rgba);
     const int bpp = SDL_BYTESPERPIXEL(rgba->format);
+#endif
     const std::uint8_t* srcPixels = static_cast<const std::uint8_t*>(rgba->pixels);
     const int srcPitch = rgba->pitch;
 
@@ -122,10 +147,15 @@ std::optional<matrix_rain::GlyphBitmap> SdlTtfRasterizer::rasterize(char32_t cp)
             pixel = 0;
             break;
         }
+#if MATRIX_RAIN_SDL2
+        SDL_GetRGBA(pixel, fmt, &r, &g, &b, &a);
+#else
         SDL_GetRGBA(pixel, fmt, palette, &r, &g, &b, &a);
+#endif
     };
 
     Uint8 maxA = 0;
+    Uint8 minA = 255;
     Uint8 maxRGB = 0;
     std::uint64_t sumRGB = 0;
     const int pixelCount = srcW * srcH;
@@ -137,14 +167,16 @@ std::optional<matrix_rain::GlyphBitmap> SdlTtfRasterizer::rasterize(char32_t cp)
             read_rgba(srcRow + x * bpp, r, g, b, a);
             const Uint8 m = static_cast<Uint8>(std::max({r, g, b}));
             maxA = std::max(maxA, a);
+            minA = std::min(minA, a);
             maxRGB = std::max(maxRGB, m);
             sumRGB += m;
         }
     }
 
-    const bool useRGB = (maxA == 0);
+    const bool useRGB = (maxA == 0) || (minA == maxA);
     const double avgRGB = (pixelCount > 0) ? (static_cast<double>(sumRGB) / static_cast<double>(pixelCount)) : 0.0;
     const bool invertRGB = useRGB && (avgRGB > 127.0);
+
 
     for (int y = 0; y < srcH; ++y) {
         const int oy = dstY + y;
@@ -175,7 +207,7 @@ std::optional<matrix_rain::GlyphBitmap> SdlTtfRasterizer::rasterize(char32_t cp)
         SDL_UnlockSurface(rgba);
     }
 
-    SDL_DestroySurface(rgba);
+    matrix_rain_destroy_surface(rgba);
 
     return out;
 }
