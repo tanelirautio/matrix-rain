@@ -59,6 +59,7 @@ Prereqs:
 - Install emsdk and run `emsdk_env` so `emcc` is on PATH.
 - Ensure `EMSDK` is set (used by the CMake preset).
 Note: the web build uses Emscripten's SDL2 + SDL2_ttf ports.
+Live demo: https://tanelirautio.github.io/matrix-rain/
 
 Configure + build:
 ```
