@@ -4,6 +4,7 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
+#include <emscripten/html5.h>
 #endif
 
 #include <algorithm>
@@ -42,6 +43,54 @@ static matrix_rain::Config makeConfigFromPixels(
 
     return cfg;
 }
+
+static void queryRenderPixels(SDL_Window *window, SDL_Renderer *renderer, int *pixelW, int *pixelH) {
+#if MATRIX_RAIN_SDL2 && defined(__EMSCRIPTEN__)
+    int w = 0;
+    int h = 0;
+    if (emscripten_get_canvas_element_size("#canvas", &w, &h) == EMSCRIPTEN_RESULT_SUCCESS && w > 0 && h > 0) {
+        *pixelW = w;
+        *pixelH = h;
+        return;
+    }
+#endif
+    matrix_rain_get_window_size_pixels(window, pixelW, pixelH);
+}
+
+#if MATRIX_RAIN_SDL2 && defined(__EMSCRIPTEN__)
+static bool snapCanvasToGrid(SDL_Window *window, const RenderConfig &renderCfg, int *pixelW, int *pixelH) {
+    double cssW = 0.0;
+    double cssH = 0.0;
+    if (emscripten_get_element_css_size("body", &cssW, &cssH) != EMSCRIPTEN_RESULT_SUCCESS) {
+        return false;
+    }
+    const int cols = std::max(1, static_cast<int>(cssW) / renderCfg.cellWidthPx);
+    const int rows = std::max(1, static_cast<int>(cssH) / renderCfg.cellHeightPx);
+    const int snappedW = cols * renderCfg.cellWidthPx;
+    const int snappedH = rows * renderCfg.cellHeightPx;
+
+    int currentW = 0;
+    int currentH = 0;
+    emscripten_get_canvas_element_size("#canvas", &currentW, &currentH);
+
+    bool changed = false;
+    if (currentW != snappedW || currentH != snappedH) {
+        emscripten_set_canvas_element_size("#canvas", snappedW, snappedH);
+        changed = true;
+    }
+    if (static_cast<int>(cssW) != snappedW || static_cast<int>(cssH) != snappedH) {
+        emscripten_set_element_css_size("#canvas", snappedW, snappedH);
+    }
+    if (window && (currentW != snappedW || currentH != snappedH)) {
+        SDL_SetWindowSize(window, snappedW, snappedH);
+    }
+    if (changed) {
+        *pixelW = snappedW;
+        *pixelH = snappedH;
+    }
+    return changed;
+}
+#endif
 
 struct LoopState {
     AppArgs args;
@@ -88,6 +137,18 @@ static bool stepFrame(LoopState &state) {
     state.lastTime = now;
     float dt = std::clamp(delta.count(), 0.0f, 0.1f);
 
+#if MATRIX_RAIN_SDL2 && defined(__EMSCRIPTEN__)
+    int snappedW = state.pixelW;
+    int snappedH = state.pixelH;
+    if (snapCanvasToGrid(state.window, state.renderCfg, &snappedW, &snappedH)) {
+        state.pixelW = snappedW;
+        state.pixelH = snappedH;
+        state.rain = matrix_rain::MatrixRain(
+            makeConfigFromPixels(state.pixelW, state.pixelH, state.renderCfg, state.args));
+        state.renderer->onResizePixels(state.pixelW, state.pixelH);
+    }
+#endif
+
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
 #if MATRIX_RAIN_SDL2
@@ -128,7 +189,7 @@ static bool stepFrame(LoopState &state) {
 
         case SDL_EVENT_WINDOW_RESIZED:
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-            matrix_rain_get_window_size_pixels(state.window, &state.pixelW, &state.pixelH);
+            queryRenderPixels(state.window, state.sdlRenderer, &state.pixelW, &state.pixelH);
             state.rain = matrix_rain::MatrixRain(
                 makeConfigFromPixels(state.pixelW, state.pixelH, state.renderCfg, state.args));
             state.renderer->onResizePixels(state.pixelW, state.pixelH);
@@ -200,7 +261,7 @@ void SdlPlatform::run() {
     Uint64 windowFlags = (m_args.mode == StartMode::Windowed) ? SDL_WINDOW_RESIZABLE : SDL_WINDOW_FULLSCREEN;
     windowFlags |= SDL_WINDOW_HIDDEN;
 
-    SDL_Window* window = matrix_rain_create_window("SDL3 Matrix Rain", windowW, windowH, windowFlags);
+    SDL_Window* window = matrix_rain_create_window("Matrix Rain", windowW, windowH, windowFlags);
 
     if (!window) {
         TTF_Quit();
@@ -223,13 +284,17 @@ void SdlPlatform::run() {
 #endif
 
     int pixelW = 0, pixelH = 0;
-    matrix_rain_get_window_size_pixels(window, &pixelW, &pixelH);
+    queryRenderPixels(window, sdlRenderer, &pixelW, &pixelH);
 
 #ifdef __EMSCRIPTEN__
     auto *state = new LoopState(m_args, renderCfg, window, sdlRenderer, pixelW, pixelH);
     const float fontPtSize = m_args.fontSizeProvided ? m_args.fontSizePt : renderCfg.cellHeightPx * 0.75f;
     state->renderer = std::make_unique<SdlTtfGlyphRenderer>(
         sdlRenderer, renderCfg, "assets/fonts/NotoSansMonoCJKJP-Regular.otf", fontPtSize, m_args.debugDumps);
+    snapCanvasToGrid(window, renderCfg, &state->pixelW, &state->pixelH);
+    state->rain = matrix_rain::MatrixRain(
+        makeConfigFromPixels(state->pixelW, state->pixelH, state->renderCfg, state->args));
+    state->renderer->onResizePixels(state->pixelW, state->pixelH);
     SDL_ShowWindow(window);
     emscripten_set_main_loop_arg(&mainLoop, state, 0, true);
     return;
