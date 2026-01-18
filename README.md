@@ -81,10 +81,6 @@ The Emscripten build now outputs `index.html` plus `index.js`, `index.wasm`, and
 You can upload the contents of `build-emscripten/` to any static host and it will serve the
 Matrix Rain page at the site root.
 
-For Render.com:
-- Create a Static Site.
-- Use the `build-emscripten/` folder as the publish directory (build locally, then deploy).
-
 ## Dependencies and discovery
 
 This project uses `find_package(SDL3 CONFIG REQUIRED)` and
