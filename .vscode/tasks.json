@@ -2,9 +2,24 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Configure",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/scripts/configure.ps1"
+            ],
+            "problemMatcher": []
+        },
+        {
             "label": "Build (Debug)",
             "type": "shell",
             "command": "cmake",
+            "dependsOn": "Configure",
+            "dependsOrder": "sequence",
             "args": [
                 "--build",
                 "${workspaceFolder}/build",
@@ -23,6 +38,8 @@
             "label": "Build (Release)",
             "type": "shell",
             "command": "cmake",
+            "dependsOn": "Configure",
+            "dependsOrder": "sequence",
             "args": [
                 "--build",
                 "${workspaceFolder}/build",
@@ -37,6 +54,8 @@
             "label": "Tests (Debug)",
             "type": "shell",
             "command": "powershell",
+            "dependsOn": "Configure",
+            "dependsOrder": "sequence",
             "args": [
                 "-NoProfile",
                 "-ExecutionPolicy",
