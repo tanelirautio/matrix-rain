@@ -6,12 +6,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Dependencies (via vcpkg or Emscripten ports)
-if (EMSCRIPTEN)
+if (ANDROID)
+    set(MATRIX_RAIN_SDL_LIBS "")
+elseif (EMSCRIPTEN)
     set(MATRIX_RAIN_SDL_LIBS "")
 else()
     find_package(SDL3 CONFIG REQUIRED)
     find_package(SDL3_ttf CONFIG REQUIRED)
-    find_package(Catch2 3 CONFIG REQUIRED)
     set(MATRIX_RAIN_SDL_LIBS SDL3::SDL3 SDL3_ttf::SDL3_ttf)
 endif()
 
@@ -37,6 +38,7 @@ endif()
 # ---------------------------
 # App (SDL-specific)
 # ---------------------------
+if (NOT ANDROID)
 add_executable(MatrixRain
     src/main.cpp
     src/app/app.cpp
@@ -98,11 +100,14 @@ else()
     # Keep assets available from the build directory for tests and local runs.
     file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
 endif()
+endif()
 
 # ---------------------------
 # Tests
 # ---------------------------
-if (NOT EMSCRIPTEN)
+if (NOT EMSCRIPTEN AND NOT ANDROID)
+    find_package(Catch2 3 CONFIG REQUIRED)
+
     enable_testing()
 
     add_executable(MatrixRainTests
