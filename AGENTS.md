@@ -10,21 +10,21 @@ Matrix Rain is a C++ project with a deterministic, testable simulation core and 
 - `src/sdl/`: SDL rendering and desktop/web platform code.
 - `src/app/`: desktop app wiring and argument parsing.
 - `tests/`: Catch2 tests for core and integration behavior.
-- `android/`: Android app using JNI and native C++.
-- `spec/`: planning and task-tracking documents.
+- `android/`: Android app, Kotlin Canvas rendering, and JNI/native C++ build.
 
 Keep the simulation core portable. Do not introduce SDL, Android, JNI, or UI dependencies into `src/core`.
 
-## Current Android Direction
+## Android Implementation
 
-The Android port should build `MatrixRainCore` as part of the Android native build and expose it through the `matrixrain` JNI shared library.
+The Android app builds `MatrixRainCore` as part of the Android native build and exposes it through the `matrixrain` JNI shared library.
 
-Use the docs in `spec/` as the source of intent:
+Kotlin owns lifecycle and rendering:
 
-- `spec/android-port-plan.md`
-- `spec/android-port-todo.md`
+- `MatrixRainView` renders glyphs with Android `Canvas` and `Paint`.
+- `MatrixRainNativeSession` owns the native handle and makes cleanup idempotent.
+- Native C++ owns simulation state, frame updates, resizing, and cell reads only.
 
-The first Android implementation should keep rendering in Kotlin/Android `Canvas` and use native C++ only for simulation state and frame updates.
+Keep Android rendering in Kotlin/Android unless a change explicitly introduces a native rendering backend.
 
 ## Build And Test
 
@@ -46,6 +46,20 @@ Android build:
 ```powershell
 cd android
 .\gradlew.bat assembleDebug
+```
+
+Android unit tests:
+
+```powershell
+cd android
+.\gradlew.bat :app:testDebugUnitTest
+```
+
+Android instrumented test APK:
+
+```powershell
+cd android
+.\gradlew.bat :app:assembleDebugAndroidTest
 ```
 
 Run the smallest relevant verification for the change. For documentation-only edits, no build is required.

@@ -1,16 +1,20 @@
-# Matrix Rain (SDL3)
+# Matrix Rain
 
-Matrix Rain is a small C++/SDL3 project that renders a classic "digital rain"
-effect with a deterministic, testable simulation core and an atlas-based glyph
-renderer.
+Matrix Rain renders a classic "digital rain" effect with a deterministic,
+testable C++ simulation core and platform-specific rendering layers.
+
+The desktop and web builds use SDL rendering. The Android app builds the same
+core into a JNI shared library and renders with a Kotlin `View` using Android
+`Canvas`.
 
 ## Features
 
-- Atlas-based glyph rendering (SDL3_ttf on desktop)
+- Atlas-based glyph rendering on desktop
+- Android app with Kotlin Canvas rendering and C++ simulation through JNI
 - Brighter head, fading trail
 - HiDPI-aware grid sizing based on pixel size
 - Deterministic simulation via fixed RNG seed
-- Core simulation independent of SDL
+- Core simulation independent of SDL, Android, and JNI
 
 ## Build (Windows + vcpkg)
 
@@ -75,6 +79,30 @@ python -m http.server
 ```
 Open `http://localhost:8000/index.html`.
 
+## Android
+
+The Android project lives in `android/`. It builds `MatrixRainCore` through
+CMake and links it into the `matrixrain` JNI shared library. Kotlin owns the app
+lifecycle and Canvas rendering.
+
+Build:
+```
+cd android
+.\gradlew.bat assembleDebug
+```
+
+Kotlin unit tests:
+```
+cd android
+.\gradlew.bat :app:testDebugUnitTest
+```
+
+Instrumented test APK:
+```
+cd android
+.\gradlew.bat :app:assembleDebugAndroidTest
+```
+
 ## Deploy (static hosting)
 
 The Emscripten build now outputs `index.html` plus `index.js`, `index.wasm`, and `index.data`.
@@ -83,10 +111,11 @@ Matrix Rain page at the site root.
 
 ## Dependencies and discovery
 
-This project uses `find_package(SDL3 CONFIG REQUIRED)` and
+The desktop build uses `find_package(SDL3 CONFIG REQUIRED)` and
 `find_package(SDL3_ttf CONFIG REQUIRED)`. That means CMake must be able to
-locate SDL3 and SDL3_ttf config files.
+locate SDL3 and SDL3_ttf config files for desktop builds.
 For the web build, Emscripten uses SDL2 + SDL2_ttf ports instead of these packages.
+For Android builds, SDL3, SDL3_ttf, and Catch2 are not required.
 
 If CMake fails to configure with "could not find SDL3", you need to point it at
 your package manager's install prefix:
@@ -135,6 +164,7 @@ src/
   app/            App wiring and argument parsing
   core/           Simulation + atlas packing (SDL-free)
   sdl/            SDL3 rendering and platform layer
+android/          Android app, JNI wrapper, Gradle/CMake build
 tests/            Core tests (Catch2)
 assets/           Fonts and licenses
 ```
